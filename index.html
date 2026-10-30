@@ -1517,25 +1517,25 @@ document.getElementById("gotoDashBtn").addEventListener("click", function(){
 /* ---- Homeopathy course: 30 Oct to 28 Nov 2026; ticks in slp:v1:homeo, separate from water and timeline ---- */
 var HOMEO_KEY="slp:v1:homeo", HOMEO_START=new Date(2026,9,30), HOMEO_END=new Date(2026,10,28), HOMEO_DOSES=["8am","1pm","5pm","8pm"], HOMEO_SIPS=14;
 function homeoAll(){ try{ return JSON.parse(rawGet(HOMEO_KEY)||"{}")||{}; }catch(e){ return {}; } }
-function homeoDay(k){ var a=homeoAll(), d=a[k]||{}; return {f:Array.isArray(d.f)?d.f.slice(0,4):[false,false,false,false], s:+d.s||0, b:!!d.b}; }
+function homeoDay(k){ var a=homeoAll(), d=a[k]||{}; var sl=[]; for(var i=0;i<HOMEO_SIPS;i++) sl.push(Array.isArray(d.sl)?!!d.sl[i]:i<(+d.s||0)); return {f:Array.isArray(d.f)?d.f.slice(0,4):[false,false,false,false], sl:sl, s:sl.filter(Boolean).length, b:!!d.b}; }
 function homeoSave(k,d){ var a=homeoAll(); a[k]=d; try{ localStorage.setItem(HOMEO_KEY,JSON.stringify(a)); }catch(e){} }
 function renderHomeo(){ var card=document.getElementById("homeoCard"); if(!card) return; var today=appDate(new Date());
   if(today<HOMEO_START||today>HOMEO_END){ card.hidden=true; return; } card.hidden=false;
   var n=Math.round((today-HOMEO_START)/864e5)+1, k=todayKey(), d=homeoDay(k);
   document.getElementById("homeoDay").textContent="Day "+n+" of 30";
   var fe=document.getElementById("homeoFerrum"); fe.innerHTML=HOMEO_DOSES.map(function(t,i){ return '<button type="button" class="hchip'+(d.f[i]?' on':'')+'" data-dose="'+i+'" aria-pressed="'+(!!d.f[i])+'">'+(d.f[i]?'✓ ':'')+t+'</button>'; }).join("");
-  var si=document.getElementById("homeoSips"), h="", hr=new Date().getHours(), cur=hr-9; for(var i=0;i<HOMEO_SIPS;i++){ var on=i<d.s, now=(i===cur&&!on&&d.s<13); h+='<button type="button" class="hchip'+(on?' on':'')+(now?' now':'')+'" data-sip="'+i+'" aria-label="Sip at '+homeoHr(9+i)+(now?' (sip now)':'')+'">'+(on?'✓ ':'')+(now?'Sip now':homeoHr(9+i))+'<span class="hml">~18 ml</span></button>'; } si.innerHTML=h;
+  var si=document.getElementById("homeoSips"), h="", hr=new Date().getHours(), cur=hr-9; for(var i=0;i<HOMEO_SIPS;i++){ var on=d.sl[i], now=(i===cur&&!on&&d.s<13); h+='<button type="button" class="hchip'+(on?' on':'')+(now?' now':'')+'" data-sip="'+i+'" aria-label="Sip at '+homeoHr(9+i)+(now?' (sip now)':'')+'">'+(on?'✓ ':'')+(now?'Sip now':homeoHr(9+i))+'<span class="hml">~18 ml</span></button>'; } si.innerHTML=h;
   document.getElementById("homeoMixSub").textContent=(d.s>=13?"✓ Done for today · ":"")+d.s+" of 14 sips (~"+(d.s*18)+" ml)"; var mx=document.getElementById("homeoMixSub"); mx.classList.toggle("done",d.s>=13); si.classList.toggle("done",d.s>=13);
-  var nx=document.getElementById("homeoNext"), nh=null; if(d.s<13){ var st=Math.max(hr+1,9+d.s); if(cur>=0&&cur<HOMEO_SIPS&&cur>=d.s) st=hr; if(st<=22) nh=st; }
+  var nx=document.getElementById("homeoNext"), nh=null; if(d.s<13){ for(var q=Math.max(cur,0);q<HOMEO_SIPS;q++){ if(!d.sl[q]){ nh=9+q; break; } } }
   nx.textContent=d.s>=13?"All sips done for today":(nh==null?"No more sip slots today":(nh===hr?"Sip now ("+homeoHr(hr)+")":"Next sip at "+homeoHr(nh)));
   var nb=document.getElementById("homeoNotifBtn"); nb.hidden=!("Notification" in window)||Notification.permission!=="default";
   homeoNotify(k,d,hr); }
 function homeoHr(h){ return (h%12||12)+(h<12?"am":"pm"); }
 var homeoLastNote="";
-function homeoNotify(k,d,hr){ try{ if(!("Notification" in window)||Notification.permission!=="granted") return; if(hr<9||hr>22||d.s>=13||d.s>hr-9) return; var key=k+":"+hr; if(homeoLastNote===key) return; homeoLastNote=key; new Notification("Power mix sip",{body:"Time for your ~18 ml sip ("+homeoHr(hr)+")",tag:"slp-sip"}); }catch(e){} }
+function homeoNotify(k,d,hr){ try{ if(!("Notification" in window)||Notification.permission!=="granted") return; if(hr<9||hr>22||d.s>=13||d.sl[hr-9]) return; var key=k+":"+hr; if(homeoLastNote===key) return; homeoLastNote=key; new Notification("Power mix sip",{body:"Time for your ~18 ml sip ("+homeoHr(hr)+")",tag:"slp-sip"}); }catch(e){} }
 document.getElementById("homeoCard").addEventListener("click",function(e){ var b=e.target.closest(".hchip"); if(!b) return; var k=todayKey(), d=homeoDay(k);
   if(b.dataset.dose!=null){ var i=+b.dataset.dose; d.f[i]=!d.f[i]; }
-  else if(b.dataset.sip!=null){ var j=+b.dataset.sip; d.s=(j<d.s)?j:j+1; }
+  else if(b.dataset.sip!=null){ var j=+b.dataset.sip; d.sl[j]=!d.sl[j]; d.s=d.sl.filter(Boolean).length; }
   else if(b.id==="homeoNotifBtn"){ try{ var r=Notification.requestPermission(); if(r&&r.then) r.then(renderHomeo); }catch(_){} return; }
   homeoSave(k,d); renderHomeo(); try{ if(navigator.vibrate) navigator.vibrate(10); }catch(_){} });
 renderHomeo(); setInterval(renderHomeo,60000);
