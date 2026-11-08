@@ -444,7 +444,7 @@ body.pin-on #page-journey{padding-bottom:88px}
         <label>Fill in a missed day</label>
         <input type="date" id="fillDate">
         <div id="fillList" style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0"></div>
-        <button class="btn ghost block" type="button" id="fillSave">Save this day</button>
+        <button class="btn ghost block" type="button" id="fillAll" style="margin-bottom:6px">Tick all except walk</button><button class="btn ghost block" type="button" id="fillSave">Save this day</button>
       </div>
     </div>
   </div>
@@ -1446,7 +1446,7 @@ document.getElementById("editPlanBtnSettings").addEventListener("click", openPla
     sc.forEach(function(x){ var on=st.t[x.id]||(!Object.keys(st.t).length&&x.id!=="walk"); h+='<label class="chip'+(on?" on":"")+'" style="cursor:pointer"><input type="checkbox" data-id="'+esc(x.id)+'"'+(on?" checked":"")+' style="display:none">'+esc(x.label)+'</label>'; });
     var wOn=(st.w||0)>=WATER_TARGET_GLASSES||!Object.keys(st.t).length; h+='<label class="chip'+(wOn?" on":"")+'" style="cursor:pointer"><input type="checkbox" data-id="__w"'+(wOn?" checked":"")+' style="display:none">Water full</label>'; fl.innerHTML=h; }
   fl.addEventListener("change",function(e){ e.target.parentNode.classList.toggle("on",e.target.checked); });
-  fd.addEventListener("change",draw); draw();
+  fd.addEventListener("change",draw); draw(); document.getElementById("fillAll").addEventListener("click",function(){ fl.querySelectorAll("input").forEach(function(c){ c.checked=c.dataset.id!=="walk"; c.parentNode.classList.toggle("on",c.checked); }); });
   document.getElementById("fillSave").addEventListener("click",function(){ if(!fd.value||fd.value>=todayKey()){ toast("Pick a past day"); return; } var st=loadDayState(fd.value); st.t={};
     fl.querySelectorAll("input").forEach(function(c){ if(c.dataset.id==="__w"){ st.w=c.checked?WATER_TARGET_GLASSES:(st.w||0); } else if(c.checked) st.t[c.dataset.id]=true; });
     saveDayState(fd.value,st); toast("Saved "+fd.value); render(); });
