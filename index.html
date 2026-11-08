@@ -440,6 +440,12 @@ body.pin-on #page-journey{padding-bottom:88px}
         <input type="date" id="startDateInput" value="2026-10-27">
       </div>
       <button class="btn ghost block" type="button" id="editPlanBtnSettings">Edit plan</button>
+      <div class="field" style="margin-top:14px">
+        <label>Fill in a missed day</label>
+        <input type="date" id="fillDate">
+        <div id="fillList" style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0"></div>
+        <button class="btn ghost block" type="button" id="fillSave">Save this day</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1434,6 +1440,17 @@ document.getElementById("mealCancel").addEventListener("click", closeSheets);
 document.getElementById("scrim").addEventListener("click", closeSheets);
 document.getElementById("openPlanBtn").addEventListener("click", openPlanSheet);
 document.getElementById("editPlanBtnSettings").addEventListener("click", openPlanSheet);
+(function(){ var fd=document.getElementById("fillDate"), fl=document.getElementById("fillList");
+  var y=appDate(new Date()); y.setDate(y.getDate()-1); fd.value=keyForDate(y); fd.max=todayKey();
+  function draw(){ var st=loadDayState(fd.value), sc=scheduleFor(), h="";
+    sc.forEach(function(x){ var on=st.t[x.id]||(!Object.keys(st.t).length&&x.id!=="walk"); h+='<label class="chip'+(on?" on":"")+'" style="cursor:pointer"><input type="checkbox" data-id="'+esc(x.id)+'"'+(on?" checked":"")+' style="display:none">'+esc(x.label)+'</label>'; });
+    var wOn=(st.w||0)>=WATER_TARGET_GLASSES||!Object.keys(st.t).length; h+='<label class="chip'+(wOn?" on":"")+'" style="cursor:pointer"><input type="checkbox" data-id="__w"'+(wOn?" checked":"")+' style="display:none">Water full</label>'; fl.innerHTML=h; }
+  fl.addEventListener("change",function(e){ e.target.parentNode.classList.toggle("on",e.target.checked); });
+  fd.addEventListener("change",draw); draw();
+  document.getElementById("fillSave").addEventListener("click",function(){ if(!fd.value||fd.value>=todayKey()){ toast("Pick a past day"); return; } var st=loadDayState(fd.value); st.t={};
+    fl.querySelectorAll("input").forEach(function(c){ if(c.dataset.id==="__w"){ st.w=c.checked?WATER_TARGET_GLASSES:(st.w||0); } else if(c.checked) st.t[c.dataset.id]=true; });
+    saveDayState(fd.value,st); toast("Saved "+fd.value); render(); });
+})();
 document.getElementById("planSheetClose").addEventListener("click", closeSheets);
 document.getElementById("addSlotBtn").addEventListener("click", function(){
   readPlanDraftFromDom();
