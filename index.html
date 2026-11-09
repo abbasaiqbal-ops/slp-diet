@@ -900,6 +900,7 @@ function loadAllDayStates(){
 }
 function dayCompletion(st, sched){
   if (!sched || !sched.length) return 0;
+  if (st && st._d && st._d < "2026-11-09" && !sched.some(function(x){return x.id==="nuts";})) sched = sched.concat([{id:"nuts"}]);
   var done=0;
   for (var i=0;i<sched.length;i++) if (st && st.t && st.t[sched[i].id]) done++;
   return Math.round(done/sched.length*100);
@@ -917,7 +918,7 @@ function eachJourneyDay(cb){
   for (var d=new Date(startD.getTime()); d<=endD; d=new Date(d.getFullYear(), d.getMonth(), d.getDate()+1)){
     var k=keyForDate(d);
     if (k < start) continue;
-    days.push({key:k, date:new Date(d.getTime()), st: all[k] || {t:{},p:{},w:0}});
+    var stk = all[k] || {t:{},p:{},w:0}; stk._d = k; days.push({key:k, date:new Date(d.getTime()), st: stk});
   }
   if (cb) for (var i=0;i<days.length;i++) cb(days[i], i, days);
   return days;
